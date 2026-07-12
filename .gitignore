@@ -1,0 +1,9 @@
+# Local Virtual Environment
+venv/
+.venv/
+
+# Data Directories (exclude raw and processed data files)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
