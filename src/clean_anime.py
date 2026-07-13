@@ -43,19 +43,6 @@ def clean_anime_data(filePath):
     df['completed'] = pd.to_numeric(df['completed'], errors='coerce').fillna(0).astype(np.int32)
     df['dropped'] = pd.to_numeric(df['dropped'], errors='coerce').fillna(0).astype(np.int32) 
 
-    #Extracting year from aired column and creating a new column 'release_year' 
-    df['release_year'] = df['Aired'].apply(extract_year)
-
-    #Cleaning Studios (Taking only top 20 + Other)
-    df['studios'] = df['Studios'].fillna('Unknown').apply(lambda x: str(x).split(',')[0].strip())
-    #We consider only the first studio listed for each anime
-
-    #Top 20 studios based on the number of anime they have produced
-    top_studios = df['studios'].value_counts().index[:20]
-
-    #Grouping studios into 'Others' category for those not in the top 20
-    df['studio'] = df['studios'].apply(lambda x: x if x in top_studios or x=='Unknown' else 'Other')
-
     #Cleaning rating column (rating)
     df['rating'] = df['rating'].fillna('Unknown').apply(lambda x: str(x).split(' - ')[0].strip())
 
@@ -63,6 +50,17 @@ def clean_anime_data(filePath):
     df['genres'] = df['genres'].fillna('Unknown')
     df['type'] = df['type'].fillna('Unknown')
 
+    #Extracting year from aired column and creating a new column 'release_year' 
+    df['release_year'] = df['Aired'].apply(extract_year)
+
+    #Cleaning Studios (Taking only top 20 + Other)
+    df['studios'] = df['Studios'].fillna('Unknown').apply(lambda x: str(x).split(',')[0].strip()) #We consider only the first studio listed for each anime
+    
+    #Top 20 studios based on the number of anime they have produced
+    top_studios = df['studios'].value_counts().index[:20]
+
+    #Grouping studios into 'Others' category for those not in the top 20
+    df['studio'] = df['studios'].apply(lambda x: x if x in top_studios or x=='Unknown' else 'Other')
 
     #Assigning columns considered for analysis
     columns_to_keep = [
