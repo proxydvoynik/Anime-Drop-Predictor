@@ -39,8 +39,9 @@ def clean_anime_data(filePath):
     df['completed'] = pd.to_numeric(df['completed'], errors='coerce').fillna(0).astype(int)
     df['dropped'] = pd.to_numeric(df['dropped'], errors='coerce').fillna(0).astype(int) 
 
-    # Filter out movies
-    df = df[df['type'] != 'Movie']
+    # Filter out Movies, OVAs, and single-episode shows
+    df = df[~df['type'].isin(['Movie', 'OVA'])]
+    df = df[df['episodes'] > 1]
 
     # 4. Clean text/categoricals
     df['genres'] = df['genres'].fillna('Unknown')
