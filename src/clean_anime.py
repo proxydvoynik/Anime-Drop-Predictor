@@ -14,7 +14,6 @@ def extract_year(aired_str):
 def clean_anime_data(filePath):
     df = pd.read_csv(filePath)
 
-    # 1. CRITICAL FIX: Reassign df here to save the renamed columns!
     df = df.rename(columns={
         'MAL_ID': 'anime_id',
         'Name': 'name',
