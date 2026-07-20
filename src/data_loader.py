@@ -1,7 +1,7 @@
 import pandas as pd
 
 def process_huge_file():
-    anime_df = pd.read_csv("data/processed/cleaned_anime.csv", usecols=['anime_id', 'type', 'episodes'])
+    anime_df = pd.read_csv("data/processed/anime_cleaned.csv", usecols=['anime_id', 'type', 'episodes'])
     
     # Setup chunking for the huge file
     input_file = "data/raw/animelist.csv"
