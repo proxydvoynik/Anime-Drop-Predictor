@@ -47,7 +47,8 @@ def clean_anime_data(filePath):
     df['type'] = df['type'].fillna('Unknown')
     df['rating'] = df['rating'].fillna('Unknown').apply(lambda x: str(x).split(' - ')[0].strip())
 
-    # 5. Extract year from aired column
+    # 5. Extract airing status and year from Aired column
+    df['airing_status'] = df['Aired'].apply(lambda x: 'ongoing' if '?' in str(x) else 'completed')
     df['release_year'] = df['Aired'].apply(extract_year)
 
     # 6. Clean Studios (Keep top 20 + Other)
@@ -55,10 +56,14 @@ def clean_anime_data(filePath):
     top_studios = primary_studios.value_counts().index[:20]
     df['studio'] = primary_studios.apply(lambda x: x if x in top_studios or x == 'Unknown' else 'Other')
 
-    # 7. Keep only required columns
+    # 7. Keep all columns required for analysis and feature engineering
     columns_to_keep = [
         'anime_id', 'name', 'score', 'genres', 'type', 'episodes', 
-        'members', 'completed', 'dropped', 'release_year', 'studio', 'rating'
+        'members', 'completed', 'dropped', 'release_year', 'studio', 'rating',
+        'Duration', 'Source', 'Favorites', 'Plan to Watch', 'Premiered', 'Aired',
+        'airing_status',
+        'Score-10', 'Score-9', 'Score-8', 'Score-7', 'Score-6',
+        'Score-5', 'Score-4', 'Score-3', 'Score-2', 'Score-1'
     ]
     
     return df[columns_to_keep]
