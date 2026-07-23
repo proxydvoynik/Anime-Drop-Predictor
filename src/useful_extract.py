@@ -51,6 +51,14 @@ def extract(chunk,user_id):
         length_tol_status = "medium"
     else:
         length_tol_status = "short"
+
+    #status preference
+    tot_ongoing = len(chunk[chunk["airing_status"]=="ongoing"])
+    if tot_ongoing/tot_anime > 0.2:
+        status_pref = "ongoing"
+    else:
+        status_pref = "completed"
+
     # Write to file
     feature_list = pd.DataFrame({
                 "user_id": [user_id],
@@ -58,7 +66,8 @@ def extract(chunk,user_id):
                 "user_completion_rate": [completion_rate_status],
                 "user_avr_drop_ep": [avr_drop_ep_status],
                 "drops_slow_start": [drop_slow],
-                "length_tolerance": [length_tol_status]
+                "length_tolerance": [length_tol_status],
+                "status_preference": [status_pref]
             })
     feature_list.to_csv(
                 output_file,
@@ -72,7 +81,7 @@ def extract(chunk,user_id):
 #function for chunked loading and managing chunk splits
 def loader():
     leftover = pd.DataFrame()
-    for big_chunk in pd.read_csv(input_file,chunksize=500000,usecols=["user_id", "watching_status", "watched_episodes"]):
+    for big_chunk in pd.read_csv(input_file,chunksize=500000,usecols=["user_id", "watching_status", "watched_episodes","airing_status"]):
         last_user = big_chunk["user_id"].iloc[-1]
         complete_chunk = big_chunk[big_chunk["user_id"]!=last_user]
         complete_chunk=pd.concat([leftover,complete_chunk])
@@ -84,4 +93,3 @@ def loader():
 
 if __name__ == "__main__":
     loader()
-            
