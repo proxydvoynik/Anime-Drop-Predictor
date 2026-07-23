@@ -24,3 +24,6 @@ def process_huge_file():
             index=False
         )
         first_chunk = False
+
+if __name__ == "__main__":
+    process_huge_file()
