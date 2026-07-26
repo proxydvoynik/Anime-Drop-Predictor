@@ -1,33 +1,30 @@
 from clean_anime import clean_anime_data
 from anime_features import build_anime_features
-from data_loader import process_huge_file
+from data_clenser import process_huge_file
+from useful_extract import loader as extract_user_features
 from merge_data import build_merged_training_table
 
 def main():
-    print("===> STARTING COMPLETE DATA PREPARATION <===\n")
+    print("=== STARTING DATA PREPARATION ===")
     
-    # 1. Clean anime metadata
-    print("1: Cleaning raw anime metadata")
+    # Clean anime metadata
     df_anime = clean_anime_data("data/raw/anime_2020_corrected.csv")
     df_anime.to_csv("data/processed/cleaned_anime.csv", index=False)
-    print("== Saved cleaned anime data to: data/processed/cleaned_anime.csv ==\n")
     
-    # 2. Build show-level features
-    print("2: Precomputing show-level features")
+    # Feature engineering for anime
     df_engineered = build_anime_features(df_anime)
     df_engineered.to_csv("data/processed/cleaned_anime_features.csv", index=False)
-    print("== Saved anime features to: data/processed/cleaned_anime_features.csv ==\n")
     
-    # 3. Clean user interaction logs in chunks
-    print("3: Processing user interaction data (filtering TV shows)")
+    # Process interaction logs in chunks
     process_huge_file()
-    print("== Saved cleaned interactions to: data/processed/animelist_cleaned.csv ==\n")
     
-    # 4. Merge dropped interactions with show features for training
-    print("4: Merging dropped interactions into phase1_training.csv")
+    # Extract user watch-style features
+    extract_user_features()
+    
+    # Merge dropped interactions for training
     build_merged_training_table()
     
-    print("\n===> DATA PREPARATION COMPLETED SUCCESSFULLY <===")
+    print("=== DATA PREPARATION COMPLETED ===")
 
 if __name__ == '__main__':
     main()
