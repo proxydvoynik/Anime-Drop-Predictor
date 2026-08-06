@@ -1,4 +1,3 @@
-
 import numpy as np
 from sklearn.metrics import r2_score
 import pandas as pd
@@ -40,21 +39,21 @@ groups = df[GROUP_COL]
 
 # ---------------------------------------------------------------------------
 # 2. Anti-leakage split: GroupKFold by user_id
-#    We use a single held-out fold here (fold 0) as "the" validation set
-#    that both you and Person B will compare against.
 # ---------------------------------------------------------------------------
 gkf = GroupKFold(n_splits=5)
 train_idx, val_idx = next(gkf.split(X, y, groups=groups))
 
 X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
 y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+# IMPORTANT: y_val stays untouched, in RAW episode-number scale, the whole
+# script. It is your ground truth — you only ever transform PREDICTIONS
+# back to match it, never the other way around.
 
-# sanity check: no user appears in both sets
 assert set(groups.iloc[train_idx]).isdisjoint(set(groups.iloc[val_idx])), \
     "Leakage! A user_id appears in both train and validation."
 
 # ---------------------------------------------------------------------------
-# 3. Preprocessing — fit ONLY on training fold (never on the full dataset)
+# 3. Preprocessing — fit ONLY on training fold
 # ---------------------------------------------------------------------------
 numeric_transformer = Pipeline(steps=[
     ("imputer", SimpleImputer(strategy="median")),
@@ -72,8 +71,7 @@ preprocessor = ColumnTransformer(transformers=[
 ])
 
 # ---------------------------------------------------------------------------
-# 4. Baseline: dummy mean predictor
-#    This is the number every real model must beat.
+# 4. Baseline: dummy mean predictor (raw scale, for reference)
 # ---------------------------------------------------------------------------
 dummy = DummyRegressor(strategy="mean")
 dummy.fit(X_train, y_train)
@@ -87,7 +85,7 @@ print(f"MAE:  {dummy_mae:.4f}")
 print(f"RMSE: {dummy_rmse:.4f}\n")
 
 # ---------------------------------------------------------------------------
-# 5. Random Forest pipeline + hyperparameter tuning
+# 5. Random Forest pipeline + hyperparameter tuning — TRAINED ON LOG TARGET
 # ---------------------------------------------------------------------------
 rf_pipeline = Pipeline(steps=[
     ("preprocessor", preprocessor),
@@ -101,40 +99,50 @@ param_grid = {
     "regressor__min_samples_leaf": [12],
 }
 
-# Note: GridSearchCV does its OWN internal CV on X_train only — the held-out
-# X_val above is never touched during tuning, so there's no leakage.
+# --- STEP A: log-transform the TRAINING target only ---
+# log1p(x) = log(1 + x), safe even when x = 0 (plain log(0) would error)
+y_train_log = np.log1p(y_train)
+
 search = GridSearchCV(
     rf_pipeline,
     param_grid,
-    scoring="neg_mean_absolute_error",
+    scoring="neg_mean_absolute_error",  # scored in log-space during CV, that's fine
     cv=3,
     n_jobs=-1,
     verbose=1,
 )
 
-search.fit(X_train, y_train)
+# --- STEP B: fit on the LOG target, not the raw one ---
+search.fit(X_train, y_train_log)
 
 best_pipeline = search.best_estimator_
 print("=== Best Random Forest Hyperparameters ===")
 print(search.best_params_, "\n")
 
-rf_preds = best_pipeline.predict(X_val)
+# --- STEP C: predict -> comes back in LOG scale ---
+rf_preds_log = best_pipeline.predict(X_val)
+
+# --- STEP D: convert predictions back to REAL episode scale ---
+# expm1(x) = e^x - 1, the exact inverse of log1p
+rf_preds = np.expm1(rf_preds_log)
+
+# --- STEP E: now compare REAL predictions to REAL y_val ---
 rf_mae = mean_absolute_error(y_val, rf_preds)
 rf_rmse = np.sqrt(mean_squared_error(y_val, rf_preds))
 rf_r2 = r2_score(y_val, rf_preds)
 
-print("=== Random Forest — Validation Performance ===")
+print("=== Random Forest (log-transformed target) — Validation Performance ===")
 print(f"MAE:  {rf_mae:.4f}")
 print(f"RMSE: {rf_rmse:.4f}")
 print(f"R²:   {rf_r2:.4f}")
 print(f"Improvement over baseline MAE: {dummy_mae - rf_mae:.4f}\n")
 
 # ---------------------------------------------------------------------------
-# 6. Error breakdown by episode-drop bucket
+# 6. Error breakdown by episode-drop bucket — uses REAL-scale rf_preds
 # ---------------------------------------------------------------------------
 results = X_val.copy()
 results["actual"] = y_val.values
-results["predicted"] = rf_preds
+results["predicted"] = rf_preds        # already converted back in step D
 results["abs_error"] = np.abs(results["actual"] - results["predicted"])
 
 
@@ -159,6 +167,8 @@ print(worst[["actual", "predicted", "abs_error", "bucket"]])
 
 # ---------------------------------------------------------------------------
 # 7. Hand off to Person B / joint selection step
-#    best_pipeline is your fitted, ready-to-compare Pipeline object.
-#    Keep rf_mae / rf_rmse handy for the Step 4 joint comparison meeting.
+#    IMPORTANT: best_pipeline outputs LOG-scale predictions internally.
+#    Anyone using best_pipeline.predict() later (Flask app, Person B's
+#    comparison, unit tests) MUST also call np.expm1() on the output,
+#    or they'll hit the exact same bug you just saw.
 # ---------------------------------------------------------------------------
