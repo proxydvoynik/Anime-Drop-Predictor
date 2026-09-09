@@ -15,9 +15,52 @@ const dynamicBg = document.getElementById('dynamic-bg');
 const emptyState = document.getElementById('empty-state');
 const resultDisplay = document.getElementById('result-display');
 
+// Loading overlay elements
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingText = document.getElementById('loading-text');
+const loadingBarFill = document.getElementById('loading-bar-fill');
+const previewLoadingBadge = document.getElementById('preview-loading-badge');
+
 // State
 let selectedAnime = null;
 let searchTimeout = null;
+let loadingMsgInterval = null;
+
+// Loading overlay helpers
+const loadingMessages = [
+  'Analyzing viewing patterns...',
+  'Fetching user history from MAL...',
+  'Computing behavioral features...',
+  'Running prediction model...',
+  'Calculating drop probability...'
+];
+
+function showLoadingOverlay() {
+  loadingOverlay.classList.remove('hidden');
+  loadingBarFill.style.width = '0%';
+  let msgIndex = 0;
+  let progress = 0;
+  
+  loadingText.textContent = loadingMessages[0];
+  
+  loadingMsgInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % loadingMessages.length;
+    loadingText.textContent = loadingMessages[msgIndex];
+    progress = Math.min(progress + 18, 90);
+    loadingBarFill.style.width = `${progress}%`;
+  }, 1500);
+}
+
+function hideLoadingOverlay(success) {
+  clearInterval(loadingMsgInterval);
+  loadingBarFill.style.width = '100%';
+  loadingText.textContent = success ? 'Analysis complete!' : 'Something went wrong.';
+  
+  setTimeout(() => {
+    loadingOverlay.classList.add('hidden');
+    loadingBarFill.style.width = '0%';
+  }, 600);
+}
 
 // Debounced Search
 animeSearch.addEventListener('input', (e) => {
@@ -120,10 +163,12 @@ async function selectAnime(anime) {
   searchResults.classList.add('hidden');
   
   const placeholder = generatePlaceholder(anime.title);
+  const posterEl = document.getElementById('preview-poster');
   
   // Show preview immediately with placeholder
-  document.getElementById('preview-poster').src = placeholder;
-  document.getElementById('preview-poster').onerror = function() { this.onerror=null; this.src=placeholder; };
+  posterEl.src = placeholder;
+  posterEl.onerror = function() { this.onerror=null; this.src=placeholder; };
+  posterEl.classList.add('poster-loading');
   document.getElementById('preview-title').textContent = anime.title;
   
   const year = anime.year ? anime.year : 'Unknown Year';
@@ -137,6 +182,8 @@ async function selectAnime(anime) {
   
   // Enrich with Jikan data in the background (poster + synopsis)
   if (anime.mal_id) {
+    previewLoadingBadge.classList.remove('hidden');
+    
     const jikan = await fetchJikanDetails(anime.mal_id);
     
     // Only update if user hasn't changed selection while we were fetching
@@ -145,7 +192,7 @@ async function selectAnime(anime) {
       if (jikan.images) {
         selectedAnime.images = jikan.images;
         const posterUrl = jikan.images.jpg?.large_image_url || jikan.images.jpg?.image_url || placeholder;
-        document.getElementById('preview-poster').src = posterUrl;
+        posterEl.src = posterUrl;
         dynamicBg.style.backgroundImage = `url(${posterUrl})`;
       }
       
@@ -159,6 +206,9 @@ async function selectAnime(anime) {
         selectedAnime.themes = jikan.themes;
       }
     }
+    
+    posterEl.classList.remove('poster-loading');
+    previewLoadingBadge.classList.add('hidden');
   }
 }
 
@@ -198,11 +248,12 @@ predictForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!selectedAnime || !malUsername.value.trim()) return;
 
-  // Loading state
+  // Loading state — show full overlay
   predictBtn.disabled = true;
-  btnText.textContent = 'Analyzing Model...';
+  btnText.textContent = 'Analyzing...';
   btnLoader.classList.remove('hidden');
   hideError();
+  showLoadingOverlay();
 
   try {
     // We already have stats directly inside selectedAnime from our local endpoint!
@@ -224,9 +275,13 @@ predictForm.addEventListener('submit', async (e) => {
       throw new Error(data.error || 'Prediction failed');
     }
 
+    hideLoadingOverlay(true);
+    // Small delay so user sees "Analysis complete!" before results appear
+    await new Promise(r => setTimeout(r, 700));
     renderPrediction(data.predicted_drop_episode);
 
   } catch (err) {
+    hideLoadingOverlay(false);
     showError(err.message);
   } finally {
     predictBtn.disabled = false;

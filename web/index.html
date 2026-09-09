@@ -11,8 +11,34 @@
 </head>
 <body>
   
+  <!-- Interactive Particle Canvas -->
+  <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+  <!-- Animated Background -->
   <div id="dynamic-bg" class="dynamic-bg"></div>
   <div class="bg-overlay"></div>
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
+  </div>
+
+  <!-- Prediction Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-content">
+      <div class="loading-rings">
+        <div class="ring ring-outer"></div>
+        <div class="ring ring-middle"></div>
+        <div class="ring ring-inner"></div>
+      </div>
+      <p class="loading-text" id="loading-text">Analyzing viewing patterns...</p>
+      <div class="loading-bar-track">
+        <div class="loading-bar-fill" id="loading-bar-fill"></div>
+      </div>
+    </div>
+  </div>
 
   <main class="app-container">
     <header class="app-header">
@@ -44,6 +70,9 @@
               <div class="preview-meta">
                 <span id="preview-year"></span> • 
                 <span id="preview-episodes"></span> Episodes
+              </div>
+              <div id="preview-loading-badge" class="preview-loading-badge hidden">
+                <span class="badge-dot"></span> Fetching artwork...
               </div>
             </div>
             <button type="button" id="clear-selection" class="clear-btn">✕</button>
@@ -106,6 +135,7 @@
     </div>
   </main>
 
+  <script src="bg.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
