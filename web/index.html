@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Anime Drop Predictor</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+  
+  <div id="dynamic-bg" class="dynamic-bg"></div>
+  <div class="bg-overlay"></div>
+
+  <main class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-icon">▲</span> Drop Predictor
+      </div>
+      <p class="subtitle">AI-powered analytics for anime completion probability</p>
+    </header>
+
+    <div class="content-grid">
+      <section class="input-section glass-panel">
+        <h2 class="section-title">Analysis Parameters</h2>
+        
+        <form id="predict-form" class="input-form">
+          
+          <div class="input-group">
+            <label for="anime-search">Anime Title</label>
+            <div class="search-wrapper">
+              <input type="text" id="anime-search" placeholder="e.g. Death Note, Attack on Titan" autocomplete="off" required />
+              <div id="search-spinner" class="spinner hidden"></div>
+              <ul id="search-results" class="search-results hidden"></ul>
+            </div>
+          </div>
+          
+          <div id="selected-anime-preview" class="selected-anime-preview hidden">
+            <img id="preview-poster" src="" alt="Poster" />
+            <div class="preview-info">
+              <div id="preview-title" class="preview-title"></div>
+              <div class="preview-meta">
+                <span id="preview-year"></span> • 
+                <span id="preview-episodes"></span> Episodes
+              </div>
+            </div>
+            <button type="button" id="clear-selection" class="clear-btn">✕</button>
+          </div>
+
+          <div class="input-group">
+            <label for="mal-username">MyAnimeList Username</label>
+            <input type="text" id="mal-username" placeholder="e.g. iitjeeair001" required />
+            <p class="help-text">Used to personalize drop probability based on your viewing habits.</p>
+          </div>
+
+          <button type="submit" id="predict-btn" class="primary-btn" disabled>
+            <span class="btn-text">Run Prediction Analysis</span>
+            <span class="btn-loader hidden"></span>
+          </button>
+        </form>
+
+        <div id="error-message" class="error-message hidden"></div>
+      </section>
+
+      <section class="result-section">
+        <div id="empty-state" class="empty-state glass-panel">
+          <div class="empty-icon">◓</div>
+          <h3>Awaiting Parameters</h3>
+          <p>Select an anime and provide a MAL username to view the personalized prediction.</p>
+        </div>
+
+        <div id="result-display" class="result-display hidden">
+          <div class="prediction-card glass-panel highlight-border">
+            <div class="pred-header">Predicted Drop Episode</div>
+            <div class="pred-value-container">
+              <span id="pred-episode" class="pred-value">--</span>
+              <span class="pred-divider">/</span>
+              <span id="total-episodes" class="pred-total">--</span>
+            </div>
+            <div class="risk-bar-container">
+              <div id="risk-bar" class="risk-bar"></div>
+            </div>
+            <div id="risk-label" class="risk-label">Analyzing risk...</div>
+          </div>
+
+          <div class="details-card glass-panel">
+            <div class="details-header">
+              <img id="detail-poster" src="" alt="Anime Poster" class="detail-poster" />
+              <div class="detail-title-block">
+                <h3 id="detail-title"></h3>
+                <div class="detail-tags" id="detail-tags"></div>
+                <div class="detail-score">
+                  <span class="star">★</span> <span id="detail-score-val"></span>
+                </div>
+              </div>
+            </div>
+            <div class="detail-synopsis">
+              <h4>Synopsis</h4>
+              <p id="detail-synopsis-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
