@@ -7,3 +7,12 @@ data/raw/*
 data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
+# Models
+models/*.joblib
+
+# Notebooks
+*.ipynb
+
+# Python cache files
+__pycache__/
